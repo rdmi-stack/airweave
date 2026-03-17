@@ -45,7 +45,9 @@ interface AuthStore {
   orders: Order[];
   wishlist: number[];
   login: (email: string, password: string) => boolean;
+  loginWithPhone: (phone: string) => boolean;
   register: (name: string, email: string, phone: string, password: string) => boolean;
+  registerWithPhone: (name: string, phone: string) => boolean;
   logout: () => void;
   updateProfile: (data: Partial<User>) => void;
   addAddress: (address: Omit<Address, "id">) => void;
@@ -64,13 +66,24 @@ export const useAuthStore = create<AuthStore>()(
       wishlist: [],
 
       login: (email: string, _password: string) => {
-        // Simulated login — in production, call your API
         set({
           user: {
             id: "usr_" + Math.random().toString(36).slice(2, 10),
             name: email.split("@")[0],
             email,
             phone: "",
+          },
+        });
+        return true;
+      },
+
+      loginWithPhone: (phone: string) => {
+        set({
+          user: {
+            id: "usr_" + Math.random().toString(36).slice(2, 10),
+            name: "User",
+            email: "",
+            phone,
           },
         });
         return true;
@@ -86,6 +99,22 @@ export const useAuthStore = create<AuthStore>()(
           const { addCustomerFromStorefront } = require("./admin-store").useAdminStore.getState();
           addCustomerFromStorefront({
             id: userId, name, email, phone,
+            joinedAt: new Date().toISOString().split("T")[0],
+            totalSpent: 0, orderCount: 0,
+          });
+        } catch { /* admin store may not be loaded */ }
+        return true;
+      },
+
+      registerWithPhone: (name: string, phone: string) => {
+        const userId = "usr_" + Math.random().toString(36).slice(2, 10);
+        set({
+          user: { id: userId, name, email: "", phone },
+        });
+        try {
+          const { addCustomerFromStorefront } = require("./admin-store").useAdminStore.getState();
+          addCustomerFromStorefront({
+            id: userId, name, email: "", phone,
             joinedAt: new Date().toISOString().split("T")[0],
             totalSpent: 0, orderCount: 0,
           });

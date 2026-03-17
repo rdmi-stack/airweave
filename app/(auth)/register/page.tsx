@@ -1,24 +1,42 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
 
 export default function RegisterPage() {
   const router = useRouter();
-  const register = useAuthStore((s) => s.register);
+  const { register, registerWithPhone } = useAuthStore();
+  const [mode, setMode] = useState<"email" | "phone">("email");
+
+  // Email state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Phone state
+  const [phoneName, setPhoneName] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
+  const [otpSent, setOtpSent] = useState(false);
+  const [otp, setOtp] = useState(["", "", "", "", "", ""]);
+  const [otpTimer, setOtpTimer] = useState(0);
+  const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
+
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+    const t = setTimeout(() => setOtpTimer(otpTimer - 1), 1000);
+    return () => clearTimeout(t);
+  }, [otpTimer]);
+
+  const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     if (!name || !email || !password) {
@@ -32,6 +50,55 @@ export default function RegisterPage() {
     setLoading(true);
     setTimeout(() => {
       register(name, email, phone, password);
+      router.push("/account");
+    }, 800);
+  };
+
+  const handleSendOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (!phoneName.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+    if (!phoneNumber || phoneNumber.replace(/\D/g, "").length < 10) {
+      setError("Please enter a valid phone number");
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      setOtpSent(true);
+      setOtpTimer(30);
+      setLoading(false);
+      setTimeout(() => otpRefs.current[0]?.focus(), 100);
+    }, 800);
+  };
+
+  const handleOtpChange = (index: number, value: string) => {
+    if (value.length > 1) value = value.slice(-1);
+    if (value && !/^\d$/.test(value)) return;
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+    if (value && index < 5) otpRefs.current[index + 1]?.focus();
+  };
+
+  const handleOtpKeyDown = (index: number, e: React.KeyboardEvent) => {
+    if (e.key === "Backspace" && !otp[index] && index > 0) {
+      otpRefs.current[index - 1]?.focus();
+    }
+  };
+
+  const handleVerifyOtp = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (otp.join("").length < 6) {
+      setError("Please enter the full 6-digit OTP");
+      return;
+    }
+    setLoading(true);
+    setTimeout(() => {
+      registerWithPhone(phoneName, phoneNumber);
       router.push("/account");
     }, 800);
   };
@@ -77,106 +144,263 @@ export default function RegisterPage() {
             </Link>
           </p>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label className="text-sm font-medium block mb-2">Full Name *</label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="John Doe"
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
-              />
-            </div>
+          {/* Tab Switcher */}
+          <div className="flex bg-neutral-100 rounded-xl p-1 mb-8">
+            <button
+              onClick={() => { setMode("email"); setError(""); setOtpSent(false); }}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all cursor-pointer ${
+                mode === "email" ? "bg-white shadow-sm text-neutral-900" : "text-neutral-500"
+              }`}
+            >
+              Email
+            </button>
+            <button
+              onClick={() => { setMode("phone"); setError(""); }}
+              className={`flex-1 py-2.5 text-sm font-medium rounded-lg transition-all cursor-pointer ${
+                mode === "phone" ? "bg-white shadow-sm text-neutral-900" : "text-neutral-500"
+              }`}
+            >
+              Phone
+            </button>
+          </div>
 
-            <div>
-              <label className="text-sm font-medium block mb-2">Email Address *</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
-              />
-            </div>
+          <AnimatePresence mode="wait">
+            {mode === "email" ? (
+              <motion.form
+                key="email"
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 10 }}
+                onSubmit={handleEmailSubmit}
+                className="space-y-5"
+              >
+                <div>
+                  <label className="text-sm font-medium block mb-2">Full Name *</label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="John Doe"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
+                  />
+                </div>
 
-            <div>
-              <label className="text-sm font-medium block mb-2">Phone Number</label>
-              <input
-                type="tel"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value)}
-                placeholder="+91 98765 43210"
-                className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
-              />
-            </div>
+                <div>
+                  <label className="text-sm font-medium block mb-2">Email Address *</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
+                  />
+                </div>
 
-            <div>
-              <label className="text-sm font-medium block mb-2">Password *</label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Min 6 characters"
-                  className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors pr-12"
-                />
+                <div>
+                  <label className="text-sm font-medium block mb-2">Phone Number</label>
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="+91 98765 43210"
+                    className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium block mb-2">Password *</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Min 6 characters"
+                      className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors pr-12"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 cursor-pointer"
+                    >
+                      {showPassword ? (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                      ) : (
+                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                      )}
+                    </button>
+                  </div>
+                  {password && (
+                    <div className="mt-2 flex gap-1">
+                      {[1, 2, 3, 4].map((level) => (
+                        <div
+                          key={level}
+                          className={`h-1 flex-1 rounded-full transition-colors ${
+                            password.length >= level * 3
+                              ? password.length >= 12
+                                ? "bg-emerald-500"
+                                : password.length >= 8
+                                ? "bg-amber-500"
+                                : "bg-red-400"
+                              : "bg-neutral-200"
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-400 cursor-pointer"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full bg-neutral-900 text-white py-4 rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-60"
                 >
-                  {showPassword ? (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" /></svg>
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Creating account...
+                    </span>
                   ) : (
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" /></svg>
+                    "Create Account"
                   )}
                 </button>
-              </div>
-              {/* Password strength */}
-              {password && (
-                <div className="mt-2 flex gap-1">
-                  {[1, 2, 3, 4].map((level) => (
-                    <div
-                      key={level}
-                      className={`h-1 flex-1 rounded-full transition-colors ${
-                        password.length >= level * 3
-                          ? password.length >= 12
-                            ? "bg-emerald-500"
-                            : password.length >= 8
-                            ? "bg-amber-500"
-                            : "bg-red-400"
-                          : "bg-neutral-200"
-                      }`}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
 
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+                <p className="text-xs text-neutral-400 text-center">
+                  By creating an account, you agree to our{" "}
+                  <Link href="/terms" className="underline cursor-pointer">Terms of Service</Link> and{" "}
+                  <Link href="/privacy" className="underline cursor-pointer">Privacy Policy</Link>.
+                </p>
+              </motion.form>
+            ) : (
+              <motion.div
+                key="phone"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+              >
+                {!otpSent ? (
+                  <form onSubmit={handleSendOtp} className="space-y-5">
+                    <div>
+                      <label className="text-sm font-medium block mb-2">Full Name *</label>
+                      <input
+                        type="text"
+                        value={phoneName}
+                        onChange={(e) => setPhoneName(e.target.value)}
+                        placeholder="John Doe"
+                        className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
+                      />
+                    </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-neutral-900 text-white py-4 rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-60"
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating account...
-                </span>
-              ) : (
-                "Create Account"
-              )}
-            </button>
+                    <div>
+                      <label className="text-sm font-medium block mb-2">Phone Number *</label>
+                      <div className="flex gap-2">
+                        <div className="flex items-center bg-neutral-50 border border-neutral-200 rounded-xl px-3 text-sm text-neutral-600 shrink-0">
+                          +91
+                        </div>
+                        <input
+                          type="tel"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                          placeholder="98765 43210"
+                          className="w-full bg-neutral-50 border border-neutral-200 rounded-xl px-4 py-3.5 text-sm focus:outline-none focus:border-neutral-400 transition-colors"
+                          maxLength={10}
+                        />
+                      </div>
+                    </div>
 
-            <p className="text-xs text-neutral-400 text-center">
-              By creating an account, you agree to our{" "}
-              <span className="underline cursor-pointer">Terms of Service</span> and{" "}
-              <span className="underline cursor-pointer">Privacy Policy</span>.
-            </p>
-          </form>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-neutral-900 text-white py-4 rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-60"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Sending OTP...
+                        </span>
+                      ) : (
+                        "Send OTP"
+                      )}
+                    </button>
+
+                    <p className="text-xs text-neutral-400 text-center">
+                      By creating an account, you agree to our{" "}
+                      <Link href="/terms" className="underline cursor-pointer">Terms of Service</Link> and{" "}
+                      <Link href="/privacy" className="underline cursor-pointer">Privacy Policy</Link>.
+                    </p>
+                  </form>
+                ) : (
+                  <form onSubmit={handleVerifyOtp} className="space-y-5">
+                    <div>
+                      <p className="text-sm text-neutral-600 mb-1">
+                        OTP sent to <span className="font-medium text-neutral-900">+91 {phoneNumber}</span>
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => { setOtpSent(false); setOtp(["", "", "", "", "", ""]); setError(""); }}
+                        className="text-xs text-neutral-500 underline underline-offset-2 cursor-pointer"
+                      >
+                        Change number
+                      </button>
+                    </div>
+
+                    <div>
+                      <label className="text-sm font-medium block mb-3">Enter OTP</label>
+                      <div className="flex gap-2.5 justify-center">
+                        {otp.map((digit, i) => (
+                          <input
+                            key={i}
+                            ref={(el) => { otpRefs.current[i] = el; }}
+                            type="text"
+                            inputMode="numeric"
+                            value={digit}
+                            onChange={(e) => handleOtpChange(i, e.target.value)}
+                            onKeyDown={(e) => handleOtpKeyDown(i, e)}
+                            className="w-12 h-14 bg-neutral-50 border border-neutral-200 rounded-xl text-center text-lg font-medium focus:outline-none focus:border-neutral-900 focus:ring-1 focus:ring-neutral-900 transition-all"
+                            maxLength={1}
+                          />
+                        ))}
+                      </div>
+                    </div>
+
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="w-full bg-neutral-900 text-white py-4 rounded-xl text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-60"
+                    >
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                          Verifying...
+                        </span>
+                      ) : (
+                        "Verify & Create Account"
+                      )}
+                    </button>
+
+                    <p className="text-center text-sm">
+                      {otpTimer > 0 ? (
+                        <span className="text-neutral-400">Resend OTP in {otpTimer}s</span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => { setOtpTimer(30); setOtp(["", "", "", "", "", ""]); otpRefs.current[0]?.focus(); }}
+                          className="text-neutral-900 underline underline-offset-4 cursor-pointer"
+                        >
+                          Resend OTP
+                        </button>
+                      )}
+                    </p>
+                  </form>
+                )}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
     </main>
