@@ -5,8 +5,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/lib/cart-store";
+import { useAdminStore } from "@/lib/admin-store";
 
 export default function CartPage() {
+  const { settings } = useAdminStore();
   const { items, removeItem, updateQuantity, totalPrice, clearCart } =
     useCartStore();
   const [mounted, setMounted] = useState(false);
@@ -59,7 +61,7 @@ export default function CartPage() {
     );
   }
 
-  const shipping = totalPrice() >= 2999 ? 0 : 199;
+  const shipping = totalPrice() >= settings.freeShippingThreshold ? 0 : settings.shippingFee;
   const total = totalPrice() + shipping;
 
   return (
@@ -179,7 +181,7 @@ export default function CartPage() {
                 </div>
                 {shipping > 0 && (
                   <p className="text-xs text-neutral-400">
-                    Add &#8377;{(2999 - totalPrice()).toLocaleString("en-IN")} more for free shipping
+                    Add &#8377;{(settings.freeShippingThreshold - totalPrice()).toLocaleString("en-IN")} more for free shipping
                   </p>
                 )}
                 <div className="border-t pt-3 flex justify-between font-semibold text-base">

@@ -124,11 +124,17 @@ interface AdminStore {
   toggleCouponActive: (id: string) => void;
 
   updateSettings: (data: Partial<StoreSettings>) => void;
+
+  // Bridge: storefront → admin
+  addOrderFromStorefront: (order: MockOrder) => void;
+  addCustomerFromStorefront: (customer: MockCustomer) => void;
+  applyCoupon: (code: string, orderTotal: number) => { valid: boolean; discount: number; error?: string };
+  incrementCouponUsage: (code: string) => void;
 }
 
 export const useAdminStore = create<AdminStore>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       adminUser: null,
       customers: seedCustomers,
       orders: seedOrders,
@@ -184,6 +190,51 @@ export const useAdminStore = create<AdminStore>()(
 
       updateSettings: (data) =>
         set((s) => ({ settings: { ...s.settings, ...data } })),
+
+      // Bridge: storefront → admin
+      addOrderFromStorefront: (order) =>
+        set((s) => ({ orders: [order, ...s.orders] })),
+
+      addCustomerFromStorefront: (customer) =>
+        set((s) => {
+          const exists = s.customers.find((c) => c.email === customer.email);
+          if (exists) {
+            return {
+              customers: s.customers.map((c) =>
+                c.email === customer.email
+                  ? { ...c, totalSpent: c.totalSpent + customer.totalSpent, orderCount: c.orderCount + 1 }
+                  : c
+              ),
+            };
+          }
+          return { customers: [...s.customers, customer] };
+        }),
+
+      applyCoupon: (code, orderTotal) => {
+        const coupon = get().coupons.find(
+          (c) => c.code.toUpperCase() === code.toUpperCase() && c.isActive
+        );
+        if (!coupon) return { valid: false, discount: 0, error: "Invalid coupon code" };
+        if (new Date(coupon.expiresAt) < new Date()) return { valid: false, discount: 0, error: "Coupon has expired" };
+        if (coupon.usedCount >= coupon.usageLimit) return { valid: false, discount: 0, error: "Coupon usage limit reached" };
+        if (orderTotal < coupon.minOrderValue)
+          return { valid: false, discount: 0, error: `Minimum order ₹${coupon.minOrderValue.toLocaleString("en-IN")} required` };
+
+        let discount = coupon.type === "percentage"
+          ? Math.round(orderTotal * coupon.value / 100)
+          : coupon.value;
+        if (coupon.type === "percentage" && coupon.maxDiscount) {
+          discount = Math.min(discount, coupon.maxDiscount);
+        }
+        return { valid: true, discount };
+      },
+
+      incrementCouponUsage: (code) =>
+        set((s) => ({
+          coupons: s.coupons.map((c) =>
+            c.code.toUpperCase() === code.toUpperCase() ? { ...c, usedCount: c.usedCount + 1 } : c
+          ),
+        })),
     }),
     { name: "airweave-admin" }
   )

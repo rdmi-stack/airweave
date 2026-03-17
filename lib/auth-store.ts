@@ -77,14 +77,19 @@ export const useAuthStore = create<AuthStore>()(
       },
 
       register: (name: string, email: string, phone: string, _password: string) => {
+        const userId = "usr_" + Math.random().toString(36).slice(2, 10);
         set({
-          user: {
-            id: "usr_" + Math.random().toString(36).slice(2, 10),
-            name,
-            email,
-            phone,
-          },
+          user: { id: userId, name, email, phone },
         });
+        // Sync to admin store
+        try {
+          const { addCustomerFromStorefront } = require("./admin-store").useAdminStore.getState();
+          addCustomerFromStorefront({
+            id: userId, name, email, phone,
+            joinedAt: new Date().toISOString().split("T")[0],
+            totalSpent: 0, orderCount: 0,
+          });
+        } catch { /* admin store may not be loaded */ }
         return true;
       },
 
@@ -127,12 +132,29 @@ export const useAuthStore = create<AuthStore>()(
 
       addOrder: (order) => {
         const id = "ORD-" + Math.random().toString(36).slice(2, 8).toUpperCase();
+        const date = new Date().toISOString();
+        const fullOrder = { ...order, id, date };
         set((state) => ({
-          orders: [
-            { ...order, id, date: new Date().toISOString() },
-            ...state.orders,
-          ],
+          orders: [fullOrder, ...state.orders],
         }));
+        // Sync to admin store
+        try {
+          const user = get().user;
+          const adminStore = require("./admin-store").useAdminStore.getState();
+          adminStore.addOrderFromStorefront({
+            ...fullOrder,
+            customerId: user?.id || "",
+            customerName: user?.name || "",
+            customerEmail: user?.email || "",
+          });
+          if (user) {
+            adminStore.addCustomerFromStorefront({
+              id: user.id, name: user.name, email: user.email, phone: user.phone,
+              joinedAt: new Date().toISOString().split("T")[0],
+              totalSpent: order.total, orderCount: 1,
+            });
+          }
+        } catch { /* admin store may not be loaded */ }
         return id;
       },
     }),

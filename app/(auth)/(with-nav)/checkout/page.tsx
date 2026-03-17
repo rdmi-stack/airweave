@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
+import { useAdminStore } from "@/lib/admin-store";
 
 type Step = "address" | "payment" | "review";
 
@@ -14,11 +15,16 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, totalPrice, clearCart } = useCartStore();
   const { user, addresses, addAddress, addOrder } = useAuthStore();
+  const { settings, applyCoupon, incrementCouponUsage } = useAdminStore();
   const [mounted, setMounted] = useState(false);
   const [step, setStep] = useState<Step>("address");
   const [selectedAddress, setSelectedAddress] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("upi");
   const [loading, setLoading] = useState(false);
+  const [couponCode, setCouponCode] = useState("");
+  const [couponDiscount, setCouponDiscount] = useState(0);
+  const [couponApplied, setCouponApplied] = useState("");
+  const [couponError, setCouponError] = useState("");
 
   // Address form
   const [showNewAddr, setShowNewAddr] = useState(false);
@@ -62,8 +68,30 @@ export default function CheckoutPage() {
     );
   }
 
-  const shipping = totalPrice() >= 2999 ? 0 : 199;
-  const total = totalPrice() + shipping;
+  const shipping = totalPrice() >= settings.freeShippingThreshold ? 0 : settings.shippingFee;
+  const total = totalPrice() + shipping - couponDiscount;
+
+  const handleApplyCoupon = () => {
+    setCouponError("");
+    if (!couponCode.trim()) return;
+    const result = applyCoupon(couponCode, totalPrice());
+    if (result.valid) {
+      setCouponDiscount(result.discount);
+      setCouponApplied(couponCode.toUpperCase());
+      setCouponError("");
+    } else {
+      setCouponDiscount(0);
+      setCouponApplied("");
+      setCouponError(result.error || "Invalid coupon");
+    }
+  };
+
+  const handleRemoveCoupon = () => {
+    setCouponCode("");
+    setCouponDiscount(0);
+    setCouponApplied("");
+    setCouponError("");
+  };
   const selectedAddr = addresses.find((a) => a.id === selectedAddress);
 
   const steps: { key: Step; label: string; num: number }[] = [
@@ -94,11 +122,12 @@ export default function CheckoutPage() {
           name: i.name, size: i.size, color: i.color,
           quantity: i.quantity, price: i.price, image: i.image,
         })),
-        total,
+        total: Math.max(0, total),
         address: selectedAddr
           ? `${selectedAddr.name}, ${selectedAddr.line1}, ${selectedAddr.city} — ${selectedAddr.pincode}`
           : "",
       });
+      if (couponApplied) incrementCouponUsage(couponApplied);
       clearCart();
       router.push(`/order-success?id=${orderId}`);
     }, 1500);
@@ -368,6 +397,39 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
+              {/* Coupon */}
+              <div className="border-t pt-4 mb-4">
+                {couponApplied ? (
+                  <div className="flex items-center justify-between bg-emerald-50 rounded-lg px-3 py-2.5">
+                    <div className="flex items-center gap-2">
+                      <svg className="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
+                      <span className="text-sm font-medium text-emerald-700">{couponApplied}</span>
+                      <span className="text-xs text-emerald-600">-&#8377;{couponDiscount.toLocaleString("en-IN")}</span>
+                    </div>
+                    <button onClick={handleRemoveCoupon} className="text-xs text-neutral-400 hover:text-red-500 cursor-pointer">Remove</button>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex gap-2">
+                      <input
+                        value={couponCode}
+                        onChange={(e) => { setCouponCode(e.target.value); setCouponError(""); }}
+                        placeholder="Coupon code"
+                        className="flex-1 bg-neutral-100 border border-neutral-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-neutral-400"
+                      />
+                      <button
+                        onClick={handleApplyCoupon}
+                        className="px-4 py-2.5 bg-neutral-900 text-white text-sm rounded-lg font-medium cursor-pointer hover:bg-neutral-800 transition-colors"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                    {couponError && <p className="text-red-500 text-xs mt-1.5">{couponError}</p>}
+                    <p className="text-[11px] text-neutral-400 mt-1.5">Try: WELCOME10, FLAT500</p>
+                  </div>
+                )}
+              </div>
+
               <div className="border-t pt-4 space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-neutral-500">Subtotal</span>
@@ -377,9 +439,15 @@ export default function CheckoutPage() {
                   <span className="text-neutral-500">Shipping</span>
                   <span className={shipping === 0 ? "text-emerald-600" : ""}>{shipping === 0 ? "Free" : `₹${shipping}`}</span>
                 </div>
+                {couponDiscount > 0 && (
+                  <div className="flex justify-between text-emerald-600">
+                    <span>Discount ({couponApplied})</span>
+                    <span>-&#8377;{couponDiscount.toLocaleString("en-IN")}</span>
+                  </div>
+                )}
                 <div className="border-t pt-3 flex justify-between font-semibold text-base">
                   <span>Total</span>
-                  <span>&#8377;{total.toLocaleString("en-IN")}</span>
+                  <span>&#8377;{Math.max(0, total).toLocaleString("en-IN")}</span>
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2 text-xs text-neutral-400">
