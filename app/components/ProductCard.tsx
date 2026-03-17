@@ -4,6 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import type { Product } from "@/lib/products";
+import { useAuthStore } from "@/lib/auth-store";
 
 export default function ProductCard({
   product,
@@ -12,13 +13,41 @@ export default function ProductCard({
   product: Product;
   index?: number;
 }) {
+  const { wishlist, toggleWishlist } = useAuthStore();
+  const isWishlisted = wishlist.includes(product.id);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: "-50px" }}
       transition={{ duration: 0.6, delay: index * 0.1 }}
+      className="relative"
     >
+      {/* Wishlist heart */}
+      <button
+        onClick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleWishlist(product.id);
+        }}
+        className="absolute top-3 right-3 z-20 w-9 h-9 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:scale-110 transition-transform"
+      >
+        <svg
+          className={`w-4.5 h-4.5 transition-colors ${isWishlisted ? "text-red-500" : "text-neutral-400"}`}
+          fill={isWishlisted ? "currentColor" : "none"}
+          viewBox="0 0 24 24"
+          strokeWidth={1.5}
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"
+          />
+        </svg>
+      </button>
+
       <Link href={`/product/${product.id}`} className="group block">
         <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-neutral-100 mb-4">
           {/* Primary image */}
@@ -43,7 +72,7 @@ export default function ProductCard({
             </span>
           )}
           {product.originalPrice && (
-            <span className="absolute top-3 right-3 bg-emerald-600 text-white text-[10px] tracking-wider uppercase px-2.5 py-1.5 rounded-full z-10">
+            <span className="absolute bottom-3 left-3 bg-emerald-600 text-white text-[10px] tracking-wider uppercase px-2.5 py-1.5 rounded-full z-10">
               -{Math.round((1 - product.price / product.originalPrice) * 100)}%
             </span>
           )}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
+import { useProductStore } from "@/lib/product-store";
 
 const tabs = ["Orders", "Addresses", "Wishlist", "Profile"] as const;
 type Tab = (typeof tabs)[number];
@@ -288,7 +289,7 @@ export default function AccountPage() {
                 </Link>
               </div>
             ) : (
-              <p className="text-neutral-500 text-sm">{wishlist.length} items in your wishlist.</p>
+              <WishlistGrid wishlist={wishlist} />
             )}
           </motion.div>
         )}
@@ -322,5 +323,36 @@ export default function AccountPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function WishlistGrid({ wishlist }: { wishlist: number[] }) {
+  const products = useProductStore((s) => s.products);
+  const { toggleWishlist } = useAuthStore();
+  const wishlisted = products.filter((p) => wishlist.includes(p.id));
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
+      {wishlisted.map((product) => (
+        <div key={product.id} className="group relative">
+          <Link href={`/product/${product.id}`} className="block">
+            <div className="relative aspect-[3/4] rounded-xl overflow-hidden bg-neutral-100 mb-3">
+              <Image src={product.images[0]} alt={product.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" sizes="(max-width: 768px) 50vw, 33vw" />
+            </div>
+            <p className="text-xs text-neutral-400 tracking-wider uppercase">{product.category}</p>
+            <h3 className="font-medium text-sm">{product.name}</h3>
+            <p className="font-semibold text-sm">&#8377;{product.price.toLocaleString("en-IN")}</p>
+          </Link>
+          <button
+            onClick={() => toggleWishlist(product.id)}
+            className="absolute top-3 right-3 w-8 h-8 bg-white rounded-full flex items-center justify-center shadow-sm cursor-pointer hover:bg-red-50 transition-colors"
+          >
+            <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+            </svg>
+          </button>
+        </div>
+      ))}
+    </div>
   );
 }

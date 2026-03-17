@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { notFound } from "next/navigation";
 import { useProductStore } from "@/lib/product-store";
 import { useCartStore } from "@/lib/cart-store";
+import { useAuthStore } from "@/lib/auth-store";
 import ProductCard from "@/app/components/ProductCard";
 
 /* ── animation variants ── */
@@ -62,6 +63,9 @@ export default function ProductPage({
   const products = useProductStore((s) => s.products);
   const product = products.find((p) => p.id === Number(id));
   const addItem = useCartStore((s) => s.addItem);
+  const { wishlist, toggleWishlist } = useAuthStore();
+  const isWishlisted = product ? wishlist.includes(product.id) : false;
+  const [showShareToast, setShowShareToast] = useState(false);
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [selectedSize, setSelectedSize] = useState("");
@@ -474,17 +478,35 @@ export default function ProductPage({
 
             {/* Wishlist + Share */}
             <div className="flex gap-3 mb-8">
-              <button className="flex-1 flex items-center justify-center gap-2 py-3 border-2 border-neutral-200 rounded-xl text-sm text-neutral-600 hover:border-neutral-400 transition-colors cursor-pointer">
-                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+              <button
+                onClick={() => product && toggleWishlist(product.id)}
+                className={`flex-1 flex items-center justify-center gap-2 py-3 border-2 rounded-xl text-sm transition-all cursor-pointer ${
+                  isWishlisted
+                    ? "border-red-200 bg-red-50 text-red-500"
+                    : "border-neutral-200 text-neutral-600 hover:border-neutral-400"
+                }`}
+              >
+                <svg className="w-5 h-5" fill={isWishlisted ? "currentColor" : "none"} viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
                 </svg>
-                Wishlist
+                {isWishlisted ? "Wishlisted" : "Wishlist"}
               </button>
-              <button className="flex items-center justify-center gap-2 px-5 py-3 border-2 border-neutral-200 rounded-xl text-sm text-neutral-600 hover:border-neutral-400 transition-colors cursor-pointer">
+              <button
+                onClick={() => {
+                  if (typeof navigator !== "undefined" && navigator.share) {
+                    navigator.share({ title: product?.name, url: window.location.href });
+                  } else {
+                    navigator.clipboard.writeText(window.location.href);
+                    setShowShareToast(true);
+                    setTimeout(() => setShowShareToast(false), 2000);
+                  }
+                }}
+                className="flex items-center justify-center gap-2 px-5 py-3 border-2 border-neutral-200 rounded-xl text-sm text-neutral-600 hover:border-neutral-400 transition-colors cursor-pointer relative"
+              >
                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M7.217 10.907a2.25 2.25 0 1 0 0 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 3.935 2.186 2.25 2.25 0 0 0-3.935-2.186Zm0-12.814a2.25 2.25 0 1 0 3.933-2.185 2.25 2.25 0 0 0-3.933 2.185Z" />
                 </svg>
-                Share
+                {showShareToast ? "Copied!" : "Share"}
               </button>
             </div>
 
