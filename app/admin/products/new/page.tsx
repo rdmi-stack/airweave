@@ -1,0 +1,177 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import { useProductStore } from "@/lib/product-store";
+
+const allSizes = ["S", "M", "L", "XL", "XXL"];
+
+export default function NewProductPage() {
+  const router = useRouter();
+  const { categories, addProduct } = useProductStore();
+
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+  const [originalPrice, setOriginalPrice] = useState("");
+  const [desc, setDesc] = useState("");
+  const [category, setCategory] = useState(categories[0]?.name || "");
+  const [colorsInput, setColorsInput] = useState("");
+  const [sizes, setSizes] = useState<string[]>([]);
+  const [details, setDetails] = useState<string[]>([""]);
+  const [images, setImages] = useState<string[]>([""]);
+  const [badge, setBadge] = useState("");
+
+  const toggleSize = (s: string) =>
+    setSizes((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    addProduct({
+      name,
+      price: Number(price),
+      originalPrice: originalPrice ? Number(originalPrice) : undefined,
+      desc,
+      category,
+      colors: colorsInput.split(",").map((c) => c.trim()).filter(Boolean),
+      sizes,
+      details: details.filter(Boolean),
+      images: images.filter(Boolean),
+      badge: badge || undefined,
+    });
+    router.push("/admin/products");
+  };
+
+  return (
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+      <h1 className="text-2xl font-bold text-neutral-900 mb-6">Add New Product</h1>
+
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 shadow-sm max-w-3xl space-y-5">
+        {/* Name */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Product Name</label>
+          <input type="text" value={name} onChange={(e) => setName(e.target.value)} required className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        </div>
+
+        {/* Price row */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Price (₹)</label>
+            <input type="number" value={price} onChange={(e) => setPrice(e.target.value)} required className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Original Price (₹, optional)</label>
+            <input type="number" value={originalPrice} onChange={(e) => setOriginalPrice(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
+        </div>
+
+        {/* Description */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Description</label>
+          <textarea value={desc} onChange={(e) => setDesc(e.target.value)} rows={3} required className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        </div>
+
+        {/* Category */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Category</label>
+          <select value={category} onChange={(e) => setCategory(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200 bg-white">
+            {categories.map((c) => (
+              <option key={c.name} value={c.name}>{c.name}</option>
+            ))}
+          </select>
+        </div>
+
+        {/* Colors */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Colors (comma-separated)</label>
+          <input type="text" value={colorsInput} onChange={(e) => setColorsInput(e.target.value)} placeholder="Beige, Sand, Ivory" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        </div>
+
+        {/* Sizes */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Sizes</label>
+          <div className="flex gap-2">
+            {allSizes.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleSize(s)}
+                className={`px-4 py-2 text-sm rounded-lg border transition-colors ${
+                  sizes.includes(s)
+                    ? "bg-neutral-900 text-white border-neutral-900"
+                    : "bg-white text-neutral-600 border-neutral-200 hover:border-neutral-300"
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Details */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Details</label>
+          {details.map((d, i) => (
+            <div key={i} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={d}
+                onChange={(e) => {
+                  const copy = [...details];
+                  copy[i] = e.target.value;
+                  setDetails(copy);
+                }}
+                placeholder={`Detail ${i + 1}`}
+                className="flex-1 px-3 py-2 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200"
+              />
+              {details.length > 1 && (
+                <button type="button" onClick={() => setDetails(details.filter((_, j) => j !== i))} className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm">Remove</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setDetails([...details, ""])} className="text-sm text-neutral-500 hover:text-neutral-900">+ Add detail</button>
+        </div>
+
+        {/* Images */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Image URLs</label>
+          {images.map((img, i) => (
+            <div key={i} className="flex gap-2 mb-2">
+              <input
+                type="url"
+                value={img}
+                onChange={(e) => {
+                  const copy = [...images];
+                  copy[i] = e.target.value;
+                  setImages(copy);
+                }}
+                placeholder="https://..."
+                className="flex-1 px-3 py-2 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200"
+              />
+              {images.length > 1 && (
+                <button type="button" onClick={() => setImages(images.filter((_, j) => j !== i))} className="px-3 py-2 text-red-500 hover:bg-red-50 rounded-lg text-sm">Remove</button>
+              )}
+            </div>
+          ))}
+          <button type="button" onClick={() => setImages([...images, ""])} className="text-sm text-neutral-500 hover:text-neutral-900">+ Add image</button>
+        </div>
+
+        {/* Badge */}
+        <div>
+          <label className="block text-sm font-medium text-neutral-700 mb-1">Badge (optional)</label>
+          <input type="text" value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="e.g. Best Seller, New Arrival" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        </div>
+
+        {/* Submit */}
+        <div className="flex gap-3 pt-2">
+          <button type="submit" className="px-6 py-2.5 bg-neutral-900 text-white text-sm font-medium rounded-xl hover:bg-neutral-800 transition-colors">
+            Add Product
+          </button>
+          <button type="button" onClick={() => router.push("/admin/products")} className="px-6 py-2.5 text-sm font-medium border border-neutral-200 rounded-xl hover:bg-neutral-50 transition-colors">
+            Cancel
+          </button>
+        </div>
+      </form>
+    </motion.div>
+  );
+}
