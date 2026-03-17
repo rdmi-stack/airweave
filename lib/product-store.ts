@@ -18,6 +18,8 @@ interface ProductStore {
   addProduct: (product: Omit<Product, "id">) => number;
   updateProduct: (id: number, updates: Partial<Product>) => void;
   deleteProduct: (id: number) => void;
+  updateStock: (id: number, stock: number) => void;
+  decrementStock: (id: number, quantity: number) => void;
   addCategory: (cat: Omit<Category, "count">) => void;
   updateCategory: (name: string, updates: Partial<Category>) => void;
   deleteCategory: (name: string) => void;
@@ -42,6 +44,18 @@ export const useProductStore = create<ProductStore>()(
 
       deleteProduct: (id) =>
         set((s) => ({ products: s.products.filter((p) => p.id !== id) })),
+
+      updateStock: (id, stock) =>
+        set((s) => ({
+          products: s.products.map((p) => (p.id === id ? { ...p, stock } : p)),
+        })),
+
+      decrementStock: (id, quantity) =>
+        set((s) => ({
+          products: s.products.map((p) =>
+            p.id === id ? { ...p, stock: Math.max(0, p.stock - quantity) } : p
+          ),
+        })),
 
       addCategory: (cat) =>
         set((s) => ({ categories: [...s.categories, { ...cat, count: 0 }] })),

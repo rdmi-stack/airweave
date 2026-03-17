@@ -7,6 +7,7 @@ import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
 import WishlistDrawer from "./WishlistDrawer";
+import SearchDrawer from "./SearchDrawer";
 
 export default function Navbar() {
   const pathname = usePathname();
@@ -14,6 +15,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [wishlistOpen, setWishlistOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const wishlistCount = useAuthStore((s) => s.wishlist.length);
   const [mounted, setMounted] = useState(false);
@@ -63,6 +65,25 @@ export default function Navbar() {
 
           {/* Right */}
           <div className="flex items-center gap-4">
+            {/* Search */}
+            <button
+              onClick={() => setSearchOpen(true)}
+              className="hidden md:flex cursor-pointer group"
+            >
+              <svg
+                className="w-6 h-6 group-hover:scale-110 transition-transform"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                />
+              </svg>
+            </button>
             {/* Account */}
             <Link
               href={mounted && user ? "/account" : "/login"}
@@ -194,6 +215,9 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Search Drawer */}
+      <SearchDrawer open={searchOpen} onClose={() => setSearchOpen(false)} />
 
       {/* Wishlist Drawer */}
       <WishlistDrawer open={wishlistOpen} onClose={() => setWishlistOpen(false)} />

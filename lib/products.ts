@@ -10,6 +10,7 @@ export interface Product {
   sizes: string[];
   images: string[];
   badge?: string;
+  stock: number;
 }
 
 export const products: Product[] = [
@@ -35,6 +36,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1621072156002-e2fccdc0b176?w=800&q=80",
     ],
     badge: "Best Seller",
+    stock: 25,
   },
   {
     id: 2,
@@ -56,6 +58,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1594938298603-c8148c4dae35?w=800&q=80",
       "https://images.unsplash.com/photo-1607345366928-199ea26cfe3e?w=800&q=80",
     ],
+    stock: 18,
   },
   {
     id: 3,
@@ -79,6 +82,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?w=800&q=80",
     ],
     badge: "New Arrival",
+    stock: 32,
   },
   {
     id: 4,
@@ -100,6 +104,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=800&q=80",
       "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=80",
     ],
+    stock: 15,
   },
   {
     id: 5,
@@ -123,6 +128,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&q=80",
     ],
     badge: "Best Seller",
+    stock: 8,
   },
   {
     id: 6,
@@ -144,6 +150,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1621072156002-e2fccdc0b176?w=800&q=80",
       "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=800&q=80",
     ],
+    stock: 22,
   },
   {
     id: 7,
@@ -166,6 +173,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1602810318383-e386cc2a3ccf?w=800&q=80",
     ],
     badge: "Festive Pick",
+    stock: 12,
   },
   {
     id: 8,
@@ -187,6 +195,7 @@ export const products: Product[] = [
       "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?w=800&q=80",
       "https://images.unsplash.com/photo-1473966968600-fa801b869a1a?w=800&q=80",
     ],
+    stock: 30,
   },
 ];
 

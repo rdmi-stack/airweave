@@ -76,6 +76,13 @@ export default function ProductCard({
               -{Math.round((1 - product.price / product.originalPrice) * 100)}%
             </span>
           )}
+          {product.stock === 0 && (
+            <div className="absolute inset-0 bg-black/50 z-10 flex items-center justify-center">
+              <span className="bg-white text-neutral-900 text-xs font-semibold tracking-wider uppercase px-4 py-2 rounded-full">
+                Out of Stock
+              </span>
+            </div>
+          )}
           <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-500 z-10">
             <div className="bg-white/95 backdrop-blur-sm text-center py-3.5 rounded-full text-sm font-medium shadow-lg">
               View Product →

@@ -51,6 +51,7 @@ export default function ProductsPage() {
               <th className="text-left px-5 py-3 font-medium">Product</th>
               <th className="text-left px-5 py-3 font-medium">Category</th>
               <th className="text-left px-5 py-3 font-medium">Price</th>
+              <th className="text-left px-5 py-3 font-medium">Stock</th>
               <th className="text-left px-5 py-3 font-medium">Badge</th>
               <th className="text-right px-5 py-3 font-medium">Actions</th>
             </tr>
@@ -73,6 +74,22 @@ export default function ProductsPage() {
                 </td>
                 <td className="px-5 py-3 text-neutral-600">{product.category}</td>
                 <td className="px-5 py-3 font-medium">{fmt(product.price)}</td>
+                <td className="px-5 py-3">
+                  {product.stock === 0 ? (
+                    <span className="text-red-600 font-medium">Out of Stock</span>
+                  ) : product.stock < 5 ? (
+                    <span className="text-red-600 font-medium">
+                      {product.stock}{" "}
+                      <span className="inline-flex px-1.5 py-0.5 bg-red-100 text-red-700 text-[10px] rounded-full ml-1">
+                        Low Stock
+                      </span>
+                    </span>
+                  ) : product.stock <= 15 ? (
+                    <span className="text-amber-600 font-medium">{product.stock}</span>
+                  ) : (
+                    <span className="text-emerald-600 font-medium">{product.stock}</span>
+                  )}
+                </td>
                 <td className="px-5 py-3">
                   {product.badge ? (
                     <span className="inline-flex px-2 py-0.5 bg-neutral-100 text-neutral-700 text-xs rounded-full">

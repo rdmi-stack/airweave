@@ -23,6 +23,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [details, setDetails] = useState<string[]>(product?.details?.length ? product.details : [""]);
   const [images, setImages] = useState<string[]>(product?.images?.length ? product.images : [""]);
   const [badge, setBadge] = useState(product?.badge || "");
+  const [stock, setStock] = useState(String(product?.stock ?? 20));
 
   if (!product) {
     return (
@@ -46,6 +47,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
       details: details.filter(Boolean),
       images: images.filter(Boolean),
       badge: badge || undefined,
+      stock: Number(stock),
     });
     router.push("/admin/products");
   };
@@ -146,9 +148,15 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           <button type="button" onClick={() => setImages([...images, ""])} className="text-sm text-neutral-500 hover:text-neutral-900">+ Add image</button>
         </div>
 
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Badge (optional)</label>
-          <input type="text" value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Badge (optional)</label>
+            <input type="text" value={badge} onChange={(e) => setBadge(e.target.value)} className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Stock</label>
+            <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
         </div>
 
         <div className="flex gap-3 pt-2">

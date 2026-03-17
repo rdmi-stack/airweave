@@ -163,6 +163,40 @@ export default function DashboardPage() {
         </div>
       </div>
 
+      {/* Low Stock Alerts */}
+      {products.filter((p) => p.stock < 10).length > 0 && (
+        <div className="mb-8">
+          <h2 className="text-base font-semibold text-neutral-900 mb-4">Low Stock Alerts</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {products
+              .filter((p) => p.stock < 10)
+              .map((p) => (
+                <div
+                  key={p.id}
+                  className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-center justify-between"
+                >
+                  <div>
+                    <p className="font-medium text-neutral-900 text-sm">{p.name}</p>
+                    <p className="text-xs text-amber-700 mt-1">
+                      {p.stock === 0 ? (
+                        <span className="text-red-600 font-semibold">Out of Stock</span>
+                      ) : (
+                        <>Only <span className="font-semibold">{p.stock}</span> left in stock</>
+                      )}
+                    </p>
+                  </div>
+                  <Link
+                    href={`/admin/products/${p.id}`}
+                    className="text-xs font-medium px-3 py-1.5 bg-white border border-amber-300 rounded-lg hover:bg-amber-100 transition-colors shrink-0"
+                  >
+                    Edit
+                  </Link>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
       {/* Recent orders */}
       <div className="bg-white rounded-xl shadow-sm overflow-hidden">
         <div className="px-5 py-4 border-b border-neutral-100 flex items-center justify-between">

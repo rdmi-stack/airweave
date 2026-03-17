@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useAuthStore } from "@/lib/auth-store";
 import { useProductStore } from "@/lib/product-store";
 import { useCartStore } from "@/lib/cart-store";
+import { useToastStore } from "@/lib/toast-store";
 
 export default function WishlistDrawer({
   open,
@@ -152,6 +153,7 @@ function WishlistItem({
       return;
     }
     onAddToCart(selectedSize, selectedColor);
+    useToastStore.getState().addToast({ message: "Moved to cart!", type: "success" });
   };
 
   return (

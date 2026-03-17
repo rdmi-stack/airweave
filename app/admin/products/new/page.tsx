@@ -21,6 +21,7 @@ export default function NewProductPage() {
   const [details, setDetails] = useState<string[]>([""]);
   const [images, setImages] = useState<string[]>([""]);
   const [badge, setBadge] = useState("");
+  const [stock, setStock] = useState("20");
 
   const toggleSize = (s: string) =>
     setSizes((prev) => (prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]));
@@ -38,6 +39,7 @@ export default function NewProductPage() {
       details: details.filter(Boolean),
       images: images.filter(Boolean),
       badge: badge || undefined,
+      stock: Number(stock),
     });
     router.push("/admin/products");
   };
@@ -157,9 +159,15 @@ export default function NewProductPage() {
         </div>
 
         {/* Badge */}
-        <div>
-          <label className="block text-sm font-medium text-neutral-700 mb-1">Badge (optional)</label>
-          <input type="text" value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="e.g. Best Seller, New Arrival" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Badge (optional)</label>
+            <input type="text" value={badge} onChange={(e) => setBadge(e.target.value)} placeholder="e.g. Best Seller, New Arrival" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-neutral-700 mb-1">Stock</label>
+            <input type="number" value={stock} onChange={(e) => setStock(e.target.value)} min="0" className="w-full px-3 py-2.5 border border-neutral-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-neutral-200" />
+          </div>
         </div>
 
         {/* Submit */}

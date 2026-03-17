@@ -7,7 +7,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { notFound } from "next/navigation";
 import { useProductStore } from "@/lib/product-store";
 import { useCartStore } from "@/lib/cart-store";
+import { useToastStore } from "@/lib/toast-store";
 import { useAuthStore } from "@/lib/auth-store";
+import { useReviewStore } from "@/lib/review-store";
 import ProductCard from "@/app/components/ProductCard";
 
 /* ── animation variants ── */
@@ -20,39 +22,6 @@ const stagger = {
   visible: { transition: { staggerChildren: 0.08 } },
 };
 
-/* ── reviews data ── */
-const reviews = [
-  {
-    name: "Vikram S.",
-    location: "Mumbai",
-    rating: 5,
-    date: "2 weeks ago",
-    size: "L",
-    text: "Fits perfectly. The fabric is incredibly breathable — I wore it through a full day in 38°C heat and felt comfortable the entire time. The quality easily rivals brands 3x the price.",
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&q=80",
-    verified: true,
-  },
-  {
-    name: "Ananya R.",
-    location: "Bangalore",
-    rating: 5,
-    date: "1 month ago",
-    size: "M",
-    text: "Bought this as a gift and the recipient loved it. The packaging is premium, the fabric feels luxurious, and the fit is spot on. Will definitely buy more colors.",
-    image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&q=80",
-    verified: true,
-  },
-  {
-    name: "Karthik M.",
-    location: "Delhi",
-    rating: 4,
-    date: "3 weeks ago",
-    size: "XL",
-    text: "Great shirt, excellent material. Only reason for 4 stars is I wish there were more color options. The linen gets softer with each wash as promised. Highly recommend.",
-    image: "https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=80&q=80",
-    verified: true,
-  },
-];
 
 export default function ProductPage({
   params,
@@ -104,6 +73,7 @@ export default function ProductPage({
       quantity,
     });
     setAdded(true);
+    useToastStore.getState().addToast({ message: "Added to cart!", type: "success" });
     setTimeout(() => setAdded(false), 2500);
   };
 
@@ -328,6 +298,26 @@ export default function ProductPage({
               )}
             </div>
 
+            {/* Stock indicator */}
+            <div className="mb-6">
+              {product.stock === 0 ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-red-600">
+                  <span className="w-2 h-2 rounded-full bg-red-500" />
+                  Out of Stock
+                </span>
+              ) : product.stock < 10 ? (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-amber-600">
+                  <span className="w-2 h-2 rounded-full bg-amber-500" />
+                  Only {product.stock} left in stock
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-sm font-medium text-emerald-600">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                  In Stock
+                </span>
+              )}
+            </div>
+
             <p className="text-neutral-500 leading-relaxed mb-8">
               {product.desc}
             </p>
@@ -438,10 +428,13 @@ export default function ProductPage({
               {/* Add to Cart */}
               <button
                 onClick={handleAddToCart}
-                className={`flex-1 py-4 rounded-xl text-sm font-medium tracking-wide transition-all cursor-pointer overflow-hidden relative group ${
-                  added
-                    ? "bg-emerald-600 text-white"
-                    : "bg-neutral-900 text-white hover:bg-neutral-800"
+                disabled={product.stock === 0}
+                className={`flex-1 py-4 rounded-xl text-sm font-medium tracking-wide transition-all overflow-hidden relative group ${
+                  product.stock === 0
+                    ? "bg-neutral-300 text-neutral-500 cursor-not-allowed"
+                    : added
+                    ? "bg-emerald-600 text-white cursor-pointer"
+                    : "bg-neutral-900 text-white hover:bg-neutral-800 cursor-pointer"
                 }`}
               >
                 <AnimatePresence mode="wait">
@@ -659,112 +652,7 @@ export default function ProductPage({
       {/* ══════════════════════════════════════
           REVIEWS SECTION
       ══════════════════════════════════════ */}
-      <section className="max-w-[1400px] mx-auto px-6 mt-24">
-        <div className="border-t pt-16">
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            variants={stagger}
-            className="grid md:grid-cols-[300px,1fr] gap-12"
-          >
-            {/* Rating summary */}
-            <motion.div variants={fadeUp}>
-              <h2 className="text-2xl font-extralight mb-6">
-                Customer <span className="font-semibold italic">Reviews</span>
-              </h2>
-              <div className="flex items-center gap-4 mb-6">
-                <span className="text-5xl font-semibold">4.9</span>
-                <div>
-                  <div className="flex gap-0.5 mb-1">
-                    {Array(5)
-                      .fill(null)
-                      .map((_, j) => (
-                        <svg key={j} className="w-5 h-5 text-amber-400 fill-current" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                  </div>
-                  <p className="text-sm text-neutral-500">Based on 127 reviews</p>
-                </div>
-              </div>
-
-              {/* Star breakdown */}
-              <div className="space-y-2">
-                {[
-                  { stars: 5, count: 108, pct: 85 },
-                  { stars: 4, count: 14, pct: 11 },
-                  { stars: 3, count: 3, pct: 2.5 },
-                  { stars: 2, count: 1, pct: 0.8 },
-                  { stars: 1, count: 1, pct: 0.7 },
-                ].map((row) => (
-                  <div key={row.stars} className="flex items-center gap-3 text-sm">
-                    <span className="w-3 text-neutral-500">{row.stars}</span>
-                    <svg className="w-3.5 h-3.5 text-amber-400 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                    <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
-                      <div
-                        className="h-full bg-amber-400 rounded-full"
-                        style={{ width: `${row.pct}%` }}
-                      />
-                    </div>
-                    <span className="w-8 text-right text-neutral-400">{row.count}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Review cards */}
-            <motion.div variants={fadeUp} className="space-y-6">
-              {reviews.map((review, i) => (
-                <motion.div
-                  key={review.name}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.1 }}
-                  className="bg-neutral-50 rounded-2xl p-6"
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden relative">
-                        <Image src={review.image} alt={review.name} fill className="object-cover" sizes="40px" />
-                      </div>
-                      <div>
-                        <p className="font-medium text-sm flex items-center gap-1.5">
-                          {review.name}
-                          {review.verified && (
-                            <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </p>
-                        <p className="text-xs text-neutral-400">
-                          {review.location} · Size {review.size}
-                        </p>
-                      </div>
-                    </div>
-                    <span className="text-xs text-neutral-400">{review.date}</span>
-                  </div>
-                  <div className="flex gap-0.5 mb-3">
-                    {Array(review.rating)
-                      .fill(null)
-                      .map((_, j) => (
-                        <svg key={j} className="w-4 h-4 text-amber-400 fill-current" viewBox="0 0 20 20">
-                          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                        </svg>
-                      ))}
-                  </div>
-                  <p className="text-neutral-600 text-sm leading-relaxed">
-                    {review.text}
-                  </p>
-                </motion.div>
-              ))}
-            </motion.div>
-          </motion.div>
-        </div>
-      </section>
+      <ReviewsSection productId={product.id} />
 
       {/* ══════════════════════════════════════
           COMPLETE THE LOOK
@@ -901,6 +789,245 @@ export default function ProductPage({
         )}
       </AnimatePresence>
     </main>
+  );
+}
+
+/* ── Reviews Section Component ── */
+function ReviewsSection({ productId }: { productId: number }) {
+  const { addReview, getReviewsForProduct } = useReviewStore();
+  const user = useAuthStore((s) => s.user);
+  const [showForm, setShowForm] = useState(false);
+  const [formRating, setFormRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [formText, setFormText] = useState("");
+  const [formName, setFormName] = useState(user?.name || "");
+  const [submitted, setSubmitted] = useState(false);
+
+  const productReviews = getReviewsForProduct(productId);
+  const totalReviews = productReviews.length;
+  const avgRating = totalReviews > 0 ? productReviews.reduce((sum, r) => sum + r.rating, 0) / totalReviews : 0;
+
+  // Star distribution
+  const starCounts = [5, 4, 3, 2, 1].map((star) => {
+    const count = productReviews.filter((r) => r.rating === star).length;
+    return { stars: star, count, pct: totalReviews > 0 ? (count / totalReviews) * 100 : 0 };
+  });
+
+  const handleSubmit = () => {
+    if (formRating === 0 || !formText.trim() || !formName.trim()) return;
+    addReview({
+      productId,
+      userName: formName.trim(),
+      rating: formRating,
+      text: formText.trim(),
+      verified: !!user,
+    });
+    setFormRating(0);
+    setFormText("");
+    setShowForm(false);
+    setSubmitted(true);
+    setTimeout(() => setSubmitted(false), 3000);
+  };
+
+  const starPath = "M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z";
+
+  return (
+    <section className="max-w-[1400px] mx-auto px-6 mt-24">
+      <div className="border-t pt-16">
+        <motion.div
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true }}
+          variants={stagger}
+          className="grid md:grid-cols-[300px,1fr] gap-12"
+        >
+          {/* Rating summary */}
+          <motion.div variants={fadeUp}>
+            <h2 className="text-2xl font-extralight mb-6">
+              Customer <span className="font-semibold italic">Reviews</span>
+            </h2>
+            <div className="flex items-center gap-4 mb-6">
+              <span className="text-5xl font-semibold">{avgRating.toFixed(1)}</span>
+              <div>
+                <div className="flex gap-0.5 mb-1">
+                  {Array(5)
+                    .fill(null)
+                    .map((_, j) => (
+                      <svg key={j} className={`w-5 h-5 fill-current ${j < Math.round(avgRating) ? "text-amber-400" : "text-neutral-200"}`} viewBox="0 0 20 20">
+                        <path d={starPath} />
+                      </svg>
+                    ))}
+                </div>
+                <p className="text-sm text-neutral-500">Based on {totalReviews} review{totalReviews !== 1 ? "s" : ""}</p>
+              </div>
+            </div>
+
+            {/* Star breakdown */}
+            <div className="space-y-2">
+              {starCounts.map((row) => (
+                <div key={row.stars} className="flex items-center gap-3 text-sm">
+                  <span className="w-3 text-neutral-500">{row.stars}</span>
+                  <svg className="w-3.5 h-3.5 text-amber-400 fill-current" viewBox="0 0 20 20">
+                    <path d={starPath} />
+                  </svg>
+                  <div className="flex-1 h-2 bg-neutral-100 rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                      style={{ width: `${row.pct}%` }}
+                    />
+                  </div>
+                  <span className="w-8 text-right text-neutral-400">{row.count}</span>
+                </div>
+              ))}
+            </div>
+
+            {/* Write a Review button */}
+            <button
+              onClick={() => {
+                setShowForm(!showForm);
+                if (!formName && user?.name) setFormName(user.name);
+              }}
+              className="mt-8 w-full py-3 border border-neutral-900 rounded-full text-sm font-medium hover:bg-neutral-900 hover:text-white transition-colors cursor-pointer"
+            >
+              {showForm ? "Cancel" : "Write a Review"}
+            </button>
+
+            {submitted && (
+              <p className="mt-3 text-sm text-emerald-600 text-center">Thank you for your review!</p>
+            )}
+          </motion.div>
+
+          {/* Review form + Review cards */}
+          <motion.div variants={fadeUp} className="space-y-6">
+            {/* Inline review form */}
+            <AnimatePresence>
+              {showForm && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="overflow-hidden"
+                >
+                  <div className="bg-neutral-50 rounded-2xl p-6 mb-6">
+                    <h3 className="text-sm font-semibold mb-4">Your Review</h3>
+
+                    {/* Star rating selector */}
+                    <div className="mb-4">
+                      <p className="text-xs text-neutral-500 mb-2">Rating</p>
+                      <div className="flex gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setFormRating(star)}
+                            onMouseEnter={() => setHoverRating(star)}
+                            onMouseLeave={() => setHoverRating(0)}
+                            className="cursor-pointer"
+                          >
+                            <svg
+                              className={`w-7 h-7 fill-current transition-colors ${
+                                star <= (hoverRating || formRating) ? "text-amber-400" : "text-neutral-200"
+                              }`}
+                              viewBox="0 0 20 20"
+                            >
+                              <path d={starPath} />
+                            </svg>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Name */}
+                    <div className="mb-4">
+                      <label className="text-xs text-neutral-500 mb-1 block">Name</label>
+                      <input
+                        type="text"
+                        value={formName}
+                        onChange={(e) => setFormName(e.target.value)}
+                        placeholder="Your name"
+                        className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white"
+                      />
+                    </div>
+
+                    {/* Review text */}
+                    <div className="mb-4">
+                      <label className="text-xs text-neutral-500 mb-1 block">Review</label>
+                      <textarea
+                        value={formText}
+                        onChange={(e) => setFormText(e.target.value)}
+                        placeholder="Share your thoughts about this product..."
+                        rows={4}
+                        className="w-full px-4 py-2.5 rounded-xl border border-neutral-200 text-sm focus:outline-none focus:ring-2 focus:ring-neutral-900 bg-white resize-none"
+                      />
+                    </div>
+
+                    <button
+                      onClick={handleSubmit}
+                      disabled={formRating === 0 || !formText.trim() || !formName.trim()}
+                      className="px-8 py-2.5 bg-neutral-900 text-white rounded-full text-sm font-medium hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      Submit Review
+                    </button>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Review cards */}
+            {productReviews.map((review, i) => (
+              <motion.div
+                key={review.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="bg-neutral-50 rounded-2xl p-6"
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-neutral-200 flex items-center justify-center text-sm font-semibold text-neutral-600">
+                      {review.userName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm flex items-center gap-1.5">
+                        {review.userName}
+                        {review.verified && (
+                          <span className="inline-flex items-center gap-0.5 text-xs text-emerald-600">
+                            <svg className="w-4 h-4 text-emerald-500" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clipRule="evenodd" />
+                            </svg>
+                            Verified Purchase
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xs text-neutral-400">{review.date}</span>
+                </div>
+                <div className="flex gap-0.5 mb-3">
+                  {Array(5)
+                    .fill(null)
+                    .map((_, j) => (
+                      <svg key={j} className={`w-4 h-4 fill-current ${j < review.rating ? "text-amber-400" : "text-neutral-200"}`} viewBox="0 0 20 20">
+                        <path d={starPath} />
+                      </svg>
+                    ))}
+                </div>
+                <p className="text-neutral-600 text-sm leading-relaxed">
+                  {review.text}
+                </p>
+              </motion.div>
+            ))}
+
+            {totalReviews === 0 && (
+              <div className="text-center py-12 text-neutral-400 text-sm">
+                No reviews yet. Be the first to share your thoughts!
+              </div>
+            )}
+          </motion.div>
+        </motion.div>
+      </div>
+    </section>
   );
 }
 

@@ -156,6 +156,13 @@ export default function AccountPage() {
                           <span className={`text-xs font-medium px-3 py-1 rounded-full capitalize ${statusColor(order.status)}`}>
                             {order.status}
                           </span>
+                          <Link
+                            href={`/invoice/${order.id}`}
+                            onClick={(e) => e.stopPropagation()}
+                            className="text-xs font-medium text-neutral-500 hover:text-neutral-900 underline underline-offset-2 transition-colors"
+                          >
+                            Invoice
+                          </Link>
                           <span className="font-semibold">&#8377;{order.total.toLocaleString("en-IN")}</span>
                           <svg
                             className={`w-4 h-4 text-neutral-400 transition-transform ${isExpanded ? "rotate-180" : ""}`}
