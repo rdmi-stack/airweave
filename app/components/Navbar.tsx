@@ -6,12 +6,14 @@ import { useState, useEffect } from "react";
 import { useCartStore } from "@/lib/cart-store";
 import { useAuthStore } from "@/lib/auth-store";
 import { motion, AnimatePresence } from "framer-motion";
+import WishlistDrawer from "./WishlistDrawer";
 
 export default function Navbar() {
   const pathname = usePathname();
   const isHome = pathname === "/";
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [wishlistOpen, setWishlistOpen] = useState(false);
   const user = useAuthStore((s) => s.user);
   const wishlistCount = useAuthStore((s) => s.wishlist.length);
   const [mounted, setMounted] = useState(false);
@@ -82,9 +84,9 @@ export default function Navbar() {
               </svg>
             </Link>
             {/* Wishlist */}
-            <Link
-              href={mounted && user ? "/account" : "/login"}
-              className="relative group hidden md:flex"
+            <button
+              onClick={() => setWishlistOpen(true)}
+              className="relative group hidden md:flex cursor-pointer"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -109,7 +111,7 @@ export default function Navbar() {
                   {wishlistCount}
                 </motion.span>
               )}
-            </Link>
+            </button>
             {/* Cart */}
             <Link href="/cart" className="relative group">
               <svg
@@ -178,6 +180,9 @@ export default function Navbar() {
               <Link href="/cart" onClick={() => setMobileOpen(false)}>
                 Cart {mounted && totalItems() > 0 && `(${totalItems()})`}
               </Link>
+              <button onClick={() => { setMobileOpen(false); setWishlistOpen(true); }} className="text-left cursor-pointer">
+                Wishlist {mounted && wishlistCount > 0 && `(${wishlistCount})`}
+              </button>
               <div className="border-t pt-6 mt-2">
                 {mounted && user ? (
                   <Link href="/account" onClick={() => setMobileOpen(false)}>My Account</Link>
@@ -189,6 +194,9 @@ export default function Navbar() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Wishlist Drawer */}
+      <WishlistDrawer open={wishlistOpen} onClose={() => setWishlistOpen(false)} />
     </>
   );
 }
