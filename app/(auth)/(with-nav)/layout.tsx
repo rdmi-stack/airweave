@@ -1,4 +1,5 @@
-import MinimalNav from "@/app/components/MinimalNav";
+import Navbar from "@/app/components/Navbar";
+import Footer from "@/app/components/Footer";
 
 export default function WithNavLayout({
   children,
@@ -7,8 +8,9 @@ export default function WithNavLayout({
 }) {
   return (
     <>
-      <MinimalNav />
+      <Navbar />
       {children}
+      <Footer />
     </>
   );
 }
